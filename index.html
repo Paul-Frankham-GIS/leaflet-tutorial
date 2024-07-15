@@ -1,37 +1,139 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>My First Leaflet Map</title>
-	 <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
-	 <!--[if lte IE 8]>
-	     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.ie.css" />
-	 <![endif]-->
-	  <script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
-	   <script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+  integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+  crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+  integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+  crossorigin=""></script>
+
+<!-- Load Esri Leaflet from CDN -->
+<script src="https://unpkg.com/esri-leaflet/dist/esri-leaflet.js"></script>
+<script src="https://theroamingworkshop.cloud/b/wp-content/uploads/2021/08/countries.txt"></script>
+
+<!-- Load Lealeft Control Custom by yigityuce -->
+<script src="https://theroamingworkshop.cloud/b/wp-content/uploads/2021/08/Leaflet-Control-Custom.txt"></script>
+
+<!-- FONT AWESOME CDN -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 
 </head>
-<body>
 
-<!-- define a the area the map will go into. Feel free to change the size as needed -->
-<div id="map" style="width:800px; height: 500px;"></div>
+<style>
+
+</style>
+
+<body>
+	<div id="mapid3" style="height:600px;"></div> <! fixed size set as a style property >
+</body>
+
 <script>
 
-var coords = [37.69, -59.23]; // the geographic center of our map
-var zoomLevel = 3; // the map scale. See: http://wiki.openstreetmap.org/wiki/Zoom_levels
+//leaflet map object
+var map = L.map('mapid3',{
+	zoomControl:false,
+	maxBounds:[[-90,-180],[90,180]],
+});
+map.setView([30, 0], 3);
 
-var map = L.map('map').setView(coords, zoomLevel);
+//Define ESRI maps
+var natgeomap = L.esri.basemapLayer("NationalGeographic");
+var graymap = L.esri.basemapLayer("Terrain");
 
-// we need to provide the map with some base map tiles. There are few free options.
-// we'll use Stamen Acetate, a muted base map good for overlaying data.
-var tiles = 'http://acetate.geoiq.com/tiles/acetate-hillshading/';
-// if you'd like to explore other base maps, see: http://developer.mapquest.com/web/products/open/map
+//Add unlabeled layer to map
+graymap.addTo(map);
 
-// if you use different tiles, be sure to update the attribution :)
-L.tileLayer(tiles+'{z}/{x}/{y}.png', {
-attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery &copy; <a href="http://FortiusOne.com">FortiusOne</a> and <a href="http://stamen.com">Stamen</a>',
-maxZoom: 18
-}).addTo(map);
+
+//Set map style
+var layerstyle = {
+	weight: 0.5,
+	color: "grey",
+	dashArray: "5",
+	fillOpacity: 0,
+	};
+
+
+function mouseOver(feature, layer, e){
+	layer.on({
+		mouseover: highlight,
+		mouseout: restore,
+		click: focus,
+	});
+} 
+
+function highlight(e){
+	var layer = e.target;
+
+	layer.setStyle({
+	color:"red",
+	weight: 2,
+	});
+
+	coords=layer.getBounds().getCenter();
+	country=e.target.feature.properties.name;
+	
+	//fix known issues with browsers
+    	
+	if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+		layer.bringToFront();
+    	}
+}
+
+function restore(e){
+	var layer = e.target;
+
+	layer.setStyle(layerstyle);
+	
+	//fix known issues with browsers
+    	
+	if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+		layer.bringToFront();
+    	}
+}
+
+//instantiate label object
+var label;
+
+function focus(e){
+	label = L.tooltip().setContent(country+" !!").setLatLng(coords);
+	label.addTo(map);
+	map.fitBounds(e.target.getBounds());
+//	graymap.remove;
+	map.removeLayer(graymap);
+	natgeomap.addTo(map);
+}
+
+//Add home (reset) button
+
+L.control.custom({
+	position: 'topleft',
+	content: '<button type="button" class="btn btn-default">'+
+		'	<i class="fa fa-home"></i>'+
+		'</button>',
+	style:{
+		
+		},
+	events:{
+		click: function(){
+			map.setView([30, 0], 3);
+			map.removeLayer(natgeomap);
+			graymap.addTo(map);
+			map.removeLayer(label);
+			}
+		},
+	}).addTo(map);
+
+L.control.zoom().addTo(map);
+
+//Add geoJson layer
+L.geoJson(countries, {
+	style: layerstyle,
+	onEachFeature: mouseOver,
+	}).addTo(map);
+
 </script>
-
-</body>
 </html>
